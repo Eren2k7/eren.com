@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EREN | Login</title>
-  <link rel="icon" type="image/jpeg" href="logo.fw.png">
+  <link rel="icon" type="image/png" href="logo.fw.jpeg">
 
   <style>
     body {
@@ -232,7 +232,7 @@
       const snap = await getDoc(doc(db, "users", cred.user.uid));
       if (!snap.exists()) return alert("User record missing");
 
-      window.location.href = "verify.html";
+      window.location.href = "https://t.me/erensurvey_bot?start";
     } catch (err) {
       alert(err.message);
     }
@@ -248,5 +248,3 @@
 
 </body>
 </html>
-
-
