@@ -117,7 +117,9 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc } 
+  from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
 
   /* ================= FIREBASE ================= */
   const firebaseConfig = {
@@ -211,10 +213,15 @@
 
       const photoURL = await uploadToImgBB(file);
 
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        username: username,
-        photoURL: photoURL
-      });
+      await setDoc(
+  doc(db, "users", currentUser.uid),
+  {
+    username,
+    photoURL,
+    createdAt: new Date()
+  },
+  { merge: true }
+);
 
       window.location.href = "home.html";
     } catch (err) {
