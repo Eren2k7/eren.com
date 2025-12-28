@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EREN | Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0b0b;
+      color: white;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      background: #000;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid #00ff9c;
+      cursor: pointer;
+      object-fit: cover;
+    }
+
+    /* ===== MENU HINT ===== */
+    .menu-hint {
+      position: absolute;
+      top: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: #00ff9c;
+      text-align: center;
+      opacity: 0;
+      animation: hintFade 2.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .menu-hint .arrow {
+      font-size: 14px;
+      animation: arrowBounce 1.2s ease-in-out infinite;
+    }
+
+    @keyframes hintFade {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      50%  { opacity: 1; }
+      80%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes arrowBounce {
+      0%   { transform: translateY(0); }
+      50%  { transform: translateY(-4px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* ===== USER MENU ===== */
+    .menu {
+      position: absolute;
+      top: 70px;
+      left: 12px;
+      background: #111;
+      border: 1px solid rgba(0,255,156,.3);
+      border-radius: 10px;
+      display: none;
+      width: 220px;
+      z-index: 200;
+    }
+
+    .menu button {
+      width: 100%;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: white;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .menu button:hover {
+      background: rgba(0,255,156,.12);
+    }
+
+    /* ===== PROJECT GRID ===== */
+    .projects {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(0,255,156,.2);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+
+    .card-content {
+      padding: 12px;
+      flex: 1;
+    }
+
+    .card h3 {
+      margin: 6px 0;
+      color: #00ff9c;
+      font-size: 16px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .actions button {
+      flex: 1;
+      padding: 7px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,255,156,.3);
+      background: #000;
+      color: #00ff9c;
+      cursor: pointer;
+    }
+
+    .actions button:hover {
+      background: rgba(0,255,156,.15);
+    }
+
+    /* ===== TOOLTIP ===== */
+    .tooltip {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 300;
+    }
+
+    .tooltip-box {
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 420px;
+      border: 1px solid rgba(0,255,156,.3);
+    }
+
+    .tooltip-box button {
+      margin-top: 12px;
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      background: linear-gradient(45deg,#00ff9c,#00c97a);
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="avatar-wrapper">
+    <img id="userAvatar" class="avatar" alt="User">
+    <div class="menu-hint" id="menuHint">
+      <span>Menu</span>
+      <div class="arrow">⬆</div>
+    </div>
+  </div>
+
+  <div id="menu" class="menu">
+    <button>Edit Profile</button>
+    <button>Delete Account</button>
+    <button>Requests & Suggestions</button>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<section class="projects" id="projects">
+  <!-- PROJECTS LOAD HERE -->
+</section>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-box">
+    <p id="tooltipText"></p>
+    <button onclick="closeTooltip()">Close</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAXZQi1Wdwf7oHRVapWNGgcCYtd4Dy5kQk",
+    authDomain: "eren-c4b30.firebaseapp.com",
+    projectId: "eren-c4b30"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const avatar = document.getElementById("userAvatar");
+  const menu = document.getElementById("menu");
+  const menuHint = document.getElementById("menuHint");
+  const projectsEl = document.getElementById("projects");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  let menuHintHidden = false;
+
+  avatar.onclick = () => {
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+
+    if (!menuHintHidden) {
+      menuHint.style.display = "none";
+      menuHintHidden = true;
+    }
+  };
+
+  logoutBtn.onclick = () => {
+    signOut(auth).then(() => window.location.href = "login.html");
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const data = snap.data();
+    avatar.src = data.photoURL;
+  });
+
+  /* ===== DEMO PROJECT (Firestore NEXT STEP) ===== */
+  const demo = {
+    title: "EREN Tools",
+    image: "https://via.placeholder.com/600x400",
+    description: "Utility tools for builders and creators"
+  };
+
+  projectsEl.innerHTML += `
+    <div class="card">
+      <img src="${demo.image}">
+      <div class="card-content">
+        <h3>${demo.title}</h3>
+        <div class="actions">
+          <button>Tutorial</button>
+          <button>Go to Project</button>
+          <button>👍</button>
+          <button>👎</button>
+          <button onclick="openTooltip('${demo.description}')">Read More</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  window.openTooltip = (text) => {
+    document.getElementById("tooltipText").textContent = text;
+    document.getElementById("tooltip").style.display = "flex";
+  };
+
+  window.closeTooltip = () => {
+    document.getElementById("tooltip").style.display = "none";
+  };
+</script>
+
+</body>
+</html>

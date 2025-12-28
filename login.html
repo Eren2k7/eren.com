@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EREN | Login</title>
+  <link rel="icon" type="image/png" href="logo.fw.png">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #001f16, #0b0b0b);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      width: 340px;
+      background: rgba(0,0,0,0.75);
+      border-radius: 12px;
+      padding: 25px;
+      text-align: center;
+      border: 1px solid rgba(0,255,156,0.2);
+      box-shadow: 0 0 25px rgba(0,255,156,0.15);
+      animation: fadeIn .7s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    img {
+      width: 90px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      color: #00ff9c;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    p {
+      font-size: 13px;
+      opacity: .7;
+    }
+
+    input, button {
+      width: 92%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+    }
+
+    input {
+      background: #111;
+      color: #fff;
+    }
+
+    input:focus {
+      box-shadow: 0 0 10px rgba(0,255,156,.6);
+    }
+
+    button {
+      background: linear-gradient(45deg,#00ff9c,#00c97a);
+      font-weight: bold;
+      cursor: pointer;
+      transition: .3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0,255,156,.6);
+    }
+
+    a {
+      display: block;
+      margin-top: 6px;
+      color: #00ff9c;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <img src="logo.fw.png" alt="EREN Logo">
+  <h1>EREN</h1>
+  <p>Build. Simplify. Scale.</p>
+
+  <!-- SIGN UP -->
+  <div id="signup-form">
+    <h3>Create Account</h3>
+    <input id="signup-email" type="email" placeholder="Email">
+    <input id="signup-password" type="password" placeholder="Password">
+    <button id="signup-btn">Sign Up</button>
+    <a id="to-login">Already have an account?</a>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login-form" style="display:none;">
+    <h3>Login</h3>
+    <input id="login-email" type="email" placeholder="Email">
+    <input id="login-password" type="password" placeholder="Password">
+    <button id="login-btn">Login</button>
+    <a id="to-forgot">Forgot password?</a>
+  </div>
+
+  <!-- FORGOT -->
+  <div id="forgot-form" style="display:none;">
+    <h3>Reset Password</h3>
+    <input id="forgot-email" type="email" placeholder="Email">
+    <button id="forgot-btn">Send Reset Email</button>
+    <a id="to-signup">Back</a>
+  </div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { 
+    getAuth, 
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    sendPasswordResetEmail 
+  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  // 🔥 Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAXZQi1Wdwf7oHRVapWNGgcCYtd4Dy5kQk",
+  authDomain: "eren-c4b30.firebaseapp.com",
+  projectId: "eren-c4b30",
+  storageBucket: "eren-c4b30.firebasestorage.app",
+  messagingSenderId: "91279547740",
+  appId: "1:91279547740:web:21a3b4464dc8e608993599",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // DOM ELEMENTS
+  const signupForm = document.getElementById("signup-form");
+  const loginForm = document.getElementById("login-form");
+  const forgotForm = document.getElementById("forgot-form");
+
+  const signupEmail = document.getElementById("signup-email");
+  const signupPassword = document.getElementById("signup-password");
+
+  const loginEmail = document.getElementById("login-email");
+  const loginPassword = document.getElementById("login-password");
+
+  const forgotEmail = document.getElementById("forgot-email");
+
+  // FORM SWITCHING
+  document.getElementById("to-login").onclick = () => {
+    signupForm.style.display = "none";
+    loginForm.style.display = "block";
+    forgotForm.style.display = "none";
+  };
+
+  document.getElementById("to-forgot").onclick = () => {
+    signupForm.style.display = "none";
+    loginForm.style.display = "none";
+    forgotForm.style.display = "block";
+  };
+
+  document.getElementById("to-signup").onclick = () => {
+    signupForm.style.display = "block";
+    loginForm.style.display = "none";
+    forgotForm.style.display = "none";
+  };
+
+  // SIGN UP
+  document.getElementById("signup-btn").onclick = async () => {
+    if (!signupEmail.value || !signupPassword.value)
+      return alert("Fill all fields");
+
+    try {
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        signupEmail.value,
+        signupPassword.value
+      );
+
+      await setDoc(doc(db, "users", cred.user.uid), {
+        uid: cred.user.uid,
+        email: signupEmail.value,
+        username: "",
+        bio: "",
+        photoURL: "",
+        verified: false,
+        createdAt: serverTimestamp()
+      });
+
+      alert("Account created. Login now.");
+      document.getElementById("to-login").click();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // LOGIN
+  document.getElementById("login-btn").onclick = async () => {
+    if (!loginEmail.value || !loginPassword.value)
+      return alert("Fill all fields");
+
+    try {
+      const cred = await signInWithEmailAndPassword(
+        auth,
+        loginEmail.value,
+        loginPassword.value
+      );
+
+      const snap = await getDoc(doc(db, "users", cred.user.uid));
+      if (!snap.exists()) return alert("User record missing");
+
+      window.location.href = "verify.html";
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // RESET
+  document.getElementById("forgot-btn").onclick = async () => {
+    if (!forgotEmail.value) return alert("Enter email");
+    await sendPasswordResetEmail(auth, forgotEmail.value);
+    alert("Reset email sent");
+  };
+</script>
+
+</body>
+</html>

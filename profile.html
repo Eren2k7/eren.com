@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EREN | Profile Setup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #001f16, #0b0b0b);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .box {
+      background: rgba(0,0,0,0.85);
+      padding: 30px;
+      border-radius: 12px;
+      width: 340px;
+      border: 1px solid rgba(0,255,156,.25);
+      box-shadow: 0 0 25px rgba(0,255,156,.15);
+      animation: fadeIn .6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      color: #00ff9c;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    p {
+      font-size: 14px;
+      opacity: .75;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: none;
+      background: #111;
+      color: white;
+      outline: none;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(45deg,#00ff9c,#00c97a);
+      transition: .3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0,255,156,.6);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    img.preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 10px auto;
+      display: none;
+      border: 2px solid #00ff9c;
+    }
+
+    #uploadStatus {
+      display: none;
+      font-size: 13px;
+      margin-top: 6px;
+      opacity: .85;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>EREN</h1>
+  <p>Complete your profile</p>
+
+  <input type="text" id="username" placeholder="Your name">
+
+  <img id="preview" class="preview">
+  <input type="file" id="photo" accept="image/*">
+
+  <div id="uploadStatus"></div>
+
+  <button id="save-btn">Save & Continue</button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  /* ================= FIREBASE ================= */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAXZQi1Wdwf7oHRVapWNGgcCYtd4Dy5kQk",
+    authDomain: "eren-c4b30.firebaseapp.com",
+    projectId: "eren-c4b30",
+    storageBucket: "eren-c4b30.appspot.com",
+    messagingSenderId: "91279547740",
+    appId: "1:91279547740:web:11cc9f1eb5423f94993599"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  /* ================= DOM ================= */
+  const usernameInput = document.getElementById("username");
+  const photoInput = document.getElementById("photo");
+  const previewImg = document.getElementById("preview");
+  const saveBtn = document.getElementById("save-btn");
+  const uploadStatus = document.getElementById("uploadStatus");
+
+  let currentUser = null;
+
+  /* ================= IMAGE PREVIEW ================= */
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    previewImg.src = URL.createObjectURL(file);
+    previewImg.style.display = "block";
+  });
+
+  /* ================= AUTH + PROFILE CHECK ================= */
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    currentUser = user;
+
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.username && data.photoURL) {
+        window.location.href = "home.html";
+      }
+    }
+  });
+
+  /* ================= ImgBB UPLOAD ================= */
+  async function uploadToImgBB(file) {
+    uploadStatus.style.display = "block";
+    uploadStatus.textContent = "⏳ Uploading picture...";
+
+    const form = new FormData();
+    form.append("image", file);
+
+    const res = await fetch(
+      "https://api.imgbb.com/1/upload?key=efd9e3255bb9ff4053c312897dd157c7",
+      {
+        method: "POST",
+        body: form
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data || !data.data || !data.data.url) {
+      uploadStatus.textContent = "❌ Upload failed. Try again.";
+      throw new Error("ImgBB upload failed");
+    }
+
+    uploadStatus.textContent = "✔ Upload complete!";
+    return data.data.url;
+  }
+
+  /* ================= SAVE PROFILE ================= */
+  saveBtn.addEventListener("click", async () => {
+    const username = usernameInput.value.trim();
+    const file = photoInput.files[0];
+
+    if (!username || !file) {
+      alert("Name and profile picture are required");
+      return;
+    }
+
+    try {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+
+      const photoURL = await uploadToImgBB(file);
+
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        username: username,
+        photoURL: photoURL
+      });
+
+      window.location.href = "home.html";
+    } catch (err) {
+      alert(err.message);
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save & Continue";
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EREN | Admin Upload</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #001f16, #0b0b0b);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .box {
+      width: 360px;
+      background: rgba(0,0,0,0.85);
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,255,156,.25);
+      box-shadow: 0 0 25px rgba(0,255,156,.15);
+      animation: fadeIn .6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      text-align: center;
+      color: #00ff9c;
+      margin-bottom: 15px;
+      letter-spacing: 2px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      background: #111;
+      color: white;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    button {
+      background: linear-gradient(45deg,#00ff9c,#00c97a);
+      font-weight: bold;
+      cursor: pointer;
+      transition: .3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0,255,156,.6);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #uploadStatus {
+      font-size: 13px;
+      margin-top: 6px;
+      opacity: .85;
+      display: none;
+    }
+
+    img.preview {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 6px;
+      display: none;
+      border: 1px solid rgba(0,255,156,.3);
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>ADMIN</h1>
+
+  <input id="title" placeholder="Project title">
+  <textarea id="description" placeholder="Project description"></textarea>
+
+  <input id="tutorial" placeholder="Tutorial link (YouTube)">
+  <input id="project" placeholder="Project link">
+
+  <input type="file" id="image" accept="image/*">
+  <img id="preview" class="preview">
+
+  <div id="uploadStatus"></div>
+
+  <button id="uploadBtn">Upload Project</button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  /* ================= CONFIG ================= */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAXZQi1Wdwf7oHRVapWNGgcCYtd4Dy5kQk",
+    authDomain: "eren-c4b30.firebaseapp.com",
+    projectId: "eren-c4b30"
+  };
+
+  const ADMIN_UID = "pBMj3WNqc4WmStAlNHQwh4REHlm2"; // 🔥 IMPORTANT
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  /* ================= DOM ================= */
+  const titleInput = document.getElementById("title");
+  const descInput = document.getElementById("description");
+  const tutorialInput = document.getElementById("tutorial");
+  const projectInput = document.getElementById("project");
+  const imageInput = document.getElementById("image");
+  const previewImg = document.getElementById("preview");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const uploadStatus = document.getElementById("uploadStatus");
+
+  /* ================= IMAGE PREVIEW ================= */
+  imageInput.onchange = () => {
+    const file = imageInput.files[0];
+    if (!file) return;
+    previewImg.src = URL.createObjectURL(file);
+    previewImg.style.display = "block";
+  };
+
+  /* ================= AUTH CHECK ================= */
+  onAuthStateChanged(auth, (user) => {
+    if (!user || user.uid !== ADMIN_UID) {
+      window.location.href = "home.html";
+    }
+  });
+
+  /* ================= ImgBB UPLOAD ================= */
+  async function uploadToImgBB(file) {
+    uploadStatus.style.display = "block";
+    uploadStatus.textContent = "⏳ Uploading image...";
+
+    const form = new FormData();
+    form.append("image", file);
+
+    const res = await fetch(
+      "https://api.imgbb.com/1/upload?key=efd9e3255bb9ff4053c312897dd157c7",
+      { method: "POST", body: form }
+    );
+
+    const data = await res.json();
+
+    if (!data || !data.data || !data.data.url) {
+      uploadStatus.textContent = "❌ Image upload failed";
+      throw new Error("ImgBB upload failed");
+    }
+
+    uploadStatus.textContent = "✔ Image uploaded";
+    return data.data.url;
+  }
+
+  /* ================= UPLOAD PROJECT ================= */
+  uploadBtn.onclick = async () => {
+    const title = titleInput.value.trim();
+    const description = descInput.value.trim();
+    const tutorialLink = tutorialInput.value.trim();
+    const projectLink = projectInput.value.trim();
+    const file = imageInput.files[0];
+
+    if (!title || !description || !tutorialLink || !projectLink || !file) {
+      alert("Fill all fields");
+      return;
+    }
+
+    try {
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "Uploading...";
+
+      const imageURL = await uploadToImgBB(file);
+
+      await addDoc(collection(db, "projects"), {
+        title,
+        description,
+        tutorialLink,
+        projectLink,
+        image: imageURL,
+        createdAt: serverTimestamp()
+      });
+
+      alert("✔ Project uploaded");
+      window.location.reload();
+    } catch (err) {
+      alert(err.message);
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload Project";
+    }
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EREN | Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #001f16, #0b0b0b);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .box {
+      background: rgba(0,0,0,0.8);
+      padding: 30px;
+      border-radius: 12px;
+      width: 350px;
+      border: 1px solid rgba(0,255,156,.25);
+      box-shadow: 0 0 25px rgba(0,255,156,.15);
+      animation: fadeIn .6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      color: #00ff9c;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    p {
+      font-size: 14px;
+      opacity: .75;
+    }
+
+    a.btn {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+      background: #111;
+      color: #00ff9c;
+      text-decoration: none;
+      border: 1px solid rgba(0,255,156,.3);
+      transition: .3s;
+    }
+
+    a.btn:hover {
+      background: rgba(0,255,156,.1);
+      transform: scale(1.03);
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(45deg,#00ff9c,#00c97a);
+      transition: .3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0,255,156,.6);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="box">
+    <h1>EREN</h1>
+    <p>Verification required</p>
+  
+    <!-- TELEGRAM -->
+    <a class="btn" href="https://t.me/Eren_2k7" target="_blank">
+      Join Telegram Channel
+    </a>
+  
+    <a class="btn" href="https://t.me/+CJk6k32AGtJhNGM0" target="_blank">
+      Join Telegram Group
+    </a>
+  
+    <!-- WHATSAPP -->
+    <a class="btn" href="https://whatsapp.com/channel/0029Vb6C9R2AzNc5SLmyXk0W" target="_blank">
+      Join WhatsApp Channel
+    </a>
+  
+    <a class="btn" href="https://chat.whatsapp.com/LHFlxwyXSE1Dj0HCjeYWhh" target="_blank">
+      Join WhatsApp Community
+    </a>
+  
+    <!-- YOUTUBE -->
+    <a class="btn" href="https://youtube.com/@YOUR_YOUTUBE" target="_blank">
+      Subscribe on YouTube
+    </a>
+  
+    <button id="verify-btn">I’ve Joined — Continue</button>
+  </div>
+  
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { 
+    getFirestore, 
+    doc, 
+    getDoc, 
+    updateDoc 
+  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAXZQi1Wdwf7oHRVapWNGgcCYtd4Dy5kQk",
+    authDomain: "eren-c4b30.firebaseapp.com",
+    projectId: "eren-c4b30",
+    storageBucket: "eren-c4b30.appspot.com",
+    messagingSenderId: "91279547740",
+    appId: "1:91279547740:web:11cc9f1eb5423f94993599"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    currentUser = user;
+
+    // 🔥 Check global verification toggle
+    const configRef = doc(db, "config", "system");
+    const configSnap = await getDoc(configRef);
+
+    if (configSnap.exists() && configSnap.data().verificationEnabled === false) {
+      window.location.href = "profile.html";
+      return;
+    }
+
+    // 🔥 Check user verification
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists() && userSnap.data().verified === true) {
+      window.location.href = "profile.html";
+    }
+  });
+
+  // VERIFY BUTTON
+  document.getElementById("verify-btn").onclick = async () => {
+    if (!currentUser) return;
+
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      verified: true
+    });
+
+    window.location.href = "profile.html";
+  };
+</script>
+
+</body>
+</html>
